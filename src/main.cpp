@@ -242,31 +242,54 @@ int main() {
 
             if(prev_size>0){
                 car_s = end_path_s;
+                car_d = end_path_d;
             }
 
             bool too_close = false;
+            bool car_on_left = false;
+            bool car_on_right = false;
 
             for(int i=0; i<sensor_fusion.size(); i++){
               float d = sensor_fusion[i][6];
+              // check car directly in front of you 
               if(d<(2+4*lane+2) && d>(2+4*lane-2)){
+                double x = sensor_fusion[i][1];
+                double y = sensor_fusion[i][2];
                 double vx = sensor_fusion[i][3];
                 double vy = sensor_fusion[i][4];
                 double check_speed = sqrt(vx*vx+vy*vy);
                 double check_car_s = sensor_fusion[i][5];
+                double check_car_d = sensor_fusion[i][6];
 
                 check_car_s = check_car_s + ((double)prev_size*.02*check_speed);
-
                 if((check_car_s > car_s) && ((check_car_s-car_s) < 30)){
                   too_close = true;
                 }
               }
+
+                
+                
+                
+                  //if(car_diff_d > 2 && car_diff_d < 6){
+                   // printf("car on right\n");
+                    //car_on_right = true;
+                  //}else if(car_diff_d < -2 && car_diff_d > -6){
+                   // car_on_left = true;
+                    //printf("car on left\n");
+                  //}else{
+                    //printf("no car next to me\n");
+                  //}
+              
             }
+            
 
             if(too_close){
               ref_vel = ref_vel - 0.224;
             }else if(ref_vel < 49.5){
               ref_vel = ref_vel + 0.224;
             }
+            
+
             
           	
             json msgJson;
