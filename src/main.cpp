@@ -250,8 +250,7 @@ int main() {
             bool car_on_right = false;
 
             for(int i=0; i<sensor_fusion.size(); i++){
-              // check car directly in front of you 
-              
+              // get car sensor information 
               double x = sensor_fusion[i][1];
               double y = sensor_fusion[i][2];
               double vx = sensor_fusion[i][3];
@@ -261,7 +260,7 @@ int main() {
               double check_car_d = sensor_fusion[i][6];
               double car_diff_d = check_car_d - car_d;
               
-              // any car in front of us?
+              // any car in front of us going too slow?
               if(check_car_d<(2+4*lane+2) && check_car_d>(2+4*lane-2)){
                 check_car_s = check_car_s + ((double)prev_size*.02*check_speed);
                 if((check_car_s > car_s) && ((check_car_s-car_s) < 30)){
@@ -275,7 +274,7 @@ int main() {
                 if((check_car_s > car_s - 10) && ((check_car_s-car_s) < 15)){
                   if(car_diff_d < -2 && car_diff_d > -6){
                     car_on_left = true;
-                    printf("car on left\n");
+                    //printf("car on left\n");
                   }
                 }
               }  
@@ -285,14 +284,14 @@ int main() {
                 check_car_s = check_car_s + ((double)prev_size*.02*check_speed);
                 if((check_car_s > car_s - 10) && ((check_car_s-car_s) < 15)){
                   if(car_diff_d < 6 && car_diff_d > 2){
-                    printf("car on right\n");
-                    car_on_right = true;
+                     car_on_right = true;
+                    //printf("car on right\n");
                   }
                 }
               } 
             }
 
-
+            // switch to the inner lane when car is too close
             if (too_close && car_on_left == false && car_on_right == false){
               if(lane == 0){
                 lane = 1;
@@ -301,7 +300,7 @@ int main() {
               }else if(lane == 2){
                 lane = 1;
               }
-
+            // switch to the left if right is blocked
             }else if(too_close && lane > 0 && car_on_left == false){
               printf("going left");
               if (lane == 1){
@@ -309,6 +308,7 @@ int main() {
               }else if(lane == 2){
                 lane = 1;
               }
+            // switch to the right if left is blocked
             }else if(too_close && lane < 2 && car_on_right == false){
               printf("going right");
               if (lane == 0){
@@ -317,22 +317,20 @@ int main() {
                 lane = 2;
               }
             }
-
+            // slow down if there is a car that is too close
             if(too_close){
               ref_vel = ref_vel - 0.1;
             }else if(ref_vel < 49.5){
               ref_vel = ref_vel + 0.224;
             }
             
-
-            
-          	
             json msgJson;
 
 
             vector<double> ptsx;
             vector<double> ptsy;
 
+            // car's infomation
             double ref_x = car_x;
             double ref_y = car_y;
             double ref_yaw = deg2rad(car_yaw);
@@ -348,7 +346,7 @@ int main() {
               ptsy.push_back(car_y);
             
             }else{
-
+                // add in the 2 end points from the previous trajectory to make a smooth transition
                 ref_x = previous_path_x[prev_size - 1];
                 ref_y = previous_path_y[prev_size - 1];
 
@@ -363,7 +361,7 @@ int main() {
                 ptsy.push_back(ref_y);
 
             }
-
+            //we want to project out the position in the future, esp if we need to switch lane
             vector<double> next_mp0 = getXY(car_s+30, (2+4*lane), map_waypoints_s, map_waypoints_x, map_waypoints_y);
             vector<double> next_mp1 = getXY(car_s+60, (2+4*lane), map_waypoints_s, map_waypoints_x, map_waypoints_y);
             vector<double> next_mp2 = getXY(car_s+90, (2+4*lane), map_waypoints_s, map_waypoints_x, map_waypoints_y);
@@ -376,6 +374,7 @@ int main() {
             ptsy.push_back(next_mp1[1]);
             ptsy.push_back(next_mp2[1]);
 
+            // everything was in global coordinate, we need it in the car's coordinate  
             for(int i = 0; i < ptsx.size(); i++){
               double shift_x = ptsx[i] - ref_x;
               double shift_y = ptsy[i] - ref_y;
@@ -385,6 +384,7 @@ int main() {
 
             }
 
+            // spline generation
             tk::spline s;
 
             s.set_points(ptsx,ptsy);
@@ -397,11 +397,13 @@ int main() {
               next_y_vals.push_back(previous_path_y[i]);
             }
 
+            // projection of 30 meters
             double target_x = 30.0;
             double target_y = s(target_x);
             double target_dist = sqrt((target_x*target_x)+(target_y+target_y));
             double x_add_on = 0;
 
+            // get new waypoints, but reuse the some of the ones from the last time step
             for(int i = 1; i <= 50-previous_path_x.size(); i++){
 
               double N = (target_dist/(.02*ref_vel/2.24));
