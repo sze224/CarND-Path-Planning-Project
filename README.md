@@ -1,6 +1,32 @@
 # CarND-Path-Planning-Project
 Self-Driving Car Engineer Nanodegree Program
-   
+
+### Introduction  
+The goal of this project is to generate a path for a self driving car to drive in a simulated three lane highway scenario. In the highway, there will be other cars driving and the goal is to drive as fast and safely as possible. (ie: switch lane when the car in front 
+While generating the path, there are a few rules (obvious but important) that the self driving car must follow.  
+1) The car must not exceed 50 MPH speed limit.
+2) The car must not experience an acceleration over 10m/s^2 in any direction.
+3) The car must not experience a jerk greater than 50m/s^2.
+4) The car must not make unsafe lane changes.
+5) The car must stay within the lane
+
+### Implementation steps
+
+#### Road Trajectory generation
+The track waypoints were given as a csv file where each waypoint is roughly 30 meters apart. With the given waypoint, the goal is to create a smooth trajectory for the car to follow. In order to achieve that, we apply the a spline function to the waypoints in which spline will go through all the points in the trajctory. In order to maintain a smooth transition between the trajectory at each time step, the last 2 points of the previous trajectory will be included as the first two point in the next trajectory. This way, there will not be a disconnect between the 2 trajectory at two different time step. 
+
+#### Speed Control
+One of the rules for the self driving car is to not exceed the 50 MPH. In this case, the max reference speed for the car is set at 49.5 MPH. When there are no other cars in front of the car, then the car will go at the max speed. Then, once the car detected a car in front of it, the car will slow down and start planning to see if it can switch lanes.
+
+#### Lane switch
+Using the sensor data, we have information of how close the other cars are at. The logic is simple here, if there is a car in front of us and the car is going too slow, slow down and try to switch lane. When we determined that there are no cars within hitting distance to the left or to the right, the car will switch lanes accordingly. In the case where both left and right are clear, I decided to have the car switch to the left. This is because normally when passing a car in the freeway, we will want to use the most inner lane, since the outer lanes tends to have slower cars (cars trying to take the exit, etc). Once we make the decision on which lane to switch to, we will generate the next spline by placing the last few points in the new lanes, this way, there will be a smooth lane change. 
+
+#### Reflection
+This is a really fun and interesting project! Path planning is one of the most difficult and important step in getting a self driving car to work efficiently. Given sensor data, we are able to determine when it is safe to switch lane. We need to think of different situations and scenarios that the car can potentially experience in order to generate a safe trajectory. This had me thinking: can machine learning be applied in this area? Can a simple camera and end-to-end learning be enough to get a safe trajectory? There are so many potential in this area and this is extremely.
+
+Some improvement that I want to make to this project is adding more states and conditions for the car. For instance, it is possible to have the car accelerate while switching lane, and in this case, the gap require to switch lane can potentially decrease. Also, the car switch lanes for just to pass the slow car and switch back to the original lane. 
+
+## Original Info from Udacity
 ### Simulator.
 You can download the Term3 Simulator which contains the Path Planning Project from the [releases tab (https://github.com/udacity/self-driving-car-sim/releases).
 
