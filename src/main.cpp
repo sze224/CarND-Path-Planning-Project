@@ -250,41 +250,76 @@ int main() {
             bool car_on_right = false;
 
             for(int i=0; i<sensor_fusion.size(); i++){
-              float d = sensor_fusion[i][6];
               // check car directly in front of you 
-              if(d<(2+4*lane+2) && d>(2+4*lane-2)){
-                double x = sensor_fusion[i][1];
-                double y = sensor_fusion[i][2];
-                double vx = sensor_fusion[i][3];
-                double vy = sensor_fusion[i][4];
-                double check_speed = sqrt(vx*vx+vy*vy);
-                double check_car_s = sensor_fusion[i][5];
-                double check_car_d = sensor_fusion[i][6];
-
+              
+              double x = sensor_fusion[i][1];
+              double y = sensor_fusion[i][2];
+              double vx = sensor_fusion[i][3];
+              double vy = sensor_fusion[i][4];
+              double check_speed = sqrt(vx*vx+vy*vy);
+              double check_car_s = sensor_fusion[i][5];
+              double check_car_d = sensor_fusion[i][6];
+              double car_diff_d = check_car_d - car_d;
+              
+              // any car in front of us?
+              if(check_car_d<(2+4*lane+2) && check_car_d>(2+4*lane-2)){
                 check_car_s = check_car_s + ((double)prev_size*.02*check_speed);
                 if((check_car_s > car_s) && ((check_car_s-car_s) < 30)){
                   too_close = true;
                 }
+              }  
+
+              // any car in the left of us? 
+              if(check_car_d<(2+4*(lane-1)+2) && check_car_d>(2+4*(lane-1)-2)){
+                check_car_s = check_car_s + ((double)prev_size*.02*check_speed);
+                if((check_car_s > car_s - 10) && ((check_car_s-car_s) < 15)){
+                  if(car_diff_d < -2 && car_diff_d > -6){
+                    car_on_left = true;
+                    printf("car on left\n");
+                  }
+                }
+              }  
+
+              // any car in the right of us?
+              if(check_car_d<(2+4*(lane+1)+2) && check_car_d>(2+4*(lane+1)-2)){
+                check_car_s = check_car_s + ((double)prev_size*.02*check_speed);
+                if((check_car_s > car_s - 10) && ((check_car_s-car_s) < 15)){
+                  if(car_diff_d < 6 && car_diff_d > 2){
+                    printf("car on right\n");
+                    car_on_right = true;
+                  }
+                }
+              } 
+            }
+
+
+            if (too_close && car_on_left == false && car_on_right == false){
+              if(lane == 0){
+                lane = 1;
+              }else if(lane == 1){
+                lane = 0;
+              }else if(lane == 2){
+                lane = 1;
               }
 
-                
-                
-                
-                  //if(car_diff_d > 2 && car_diff_d < 6){
-                   // printf("car on right\n");
-                    //car_on_right = true;
-                  //}else if(car_diff_d < -2 && car_diff_d > -6){
-                   // car_on_left = true;
-                    //printf("car on left\n");
-                  //}else{
-                    //printf("no car next to me\n");
-                  //}
-              
+            }else if(too_close && lane > 0 && car_on_left == false){
+              printf("going left");
+              if (lane == 1){
+                lane = 0;
+              }else if(lane == 2){
+                lane = 1;
+              }
+            }else if(too_close && lane < 2 && car_on_right == false){
+              printf("going right");
+              if (lane == 0){
+                lane = 1;
+              }else if(lane == 1){
+                lane = 2;
+              }
             }
-            
 
             if(too_close){
-              ref_vel = ref_vel - 0.224;
+              ref_vel = ref_vel - 0.1;
             }else if(ref_vel < 49.5){
               ref_vel = ref_vel + 0.224;
             }
